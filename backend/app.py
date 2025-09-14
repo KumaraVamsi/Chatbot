@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-app = Flask(__name__, static_folder='../frontend', static_url_path='/static')
+app = Flask(__name__, static_folder='../frontend/build', static_url_path='/static')
 CORS(app)  # Allows all origins to avoid CORS errors
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
