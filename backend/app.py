@@ -1,19 +1,19 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__, static_folder='../frontend/build', static_url_path='/static')
-CORS(app)  # Allows all origins to avoid CORS errors
+app = Flask(__name__, static_folder='frontend')
+CORS(app)
 
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_API_URL = "https://api.groq.ai/v1/query"
 
 @app.route('/')
-def index():
+def serve_frontend():
     return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/api/chat', methods=['POST'])
@@ -28,24 +28,18 @@ def chat():
         "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
-    payload = {
-        "model": "llama-3.1-8b-instant",
-        "messages": [{"role": "user", "content": user_query}]
-    }
+    payload = {"query": user_query}
 
     try:
         response = requests.post(GROQ_API_URL, json=payload, headers=headers)
-        if response.status_code == 200:
-            groq_response = response.json()['choices'][0]['message']['content']
-        else:
-            groq_response = f"Error: {response.status_code} - {response.text}"
+        groq_response = response.json().get('response_text', 'No response from Groq API.')
     except Exception as e:
         print(f"Error: {e}")
-        groq_response = "Something went wrong while fetching the answer."
+        groq_response = "Error fetching response."
 
     return jsonify({"response": groq_response})
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))  # Get port from environment
-    app.run(host='0.0.0.0', port=port, debug=False)  # Disable debug in prod
-
+# Serve static assets (like style.css, script.js)
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(app.static_folder, path)
